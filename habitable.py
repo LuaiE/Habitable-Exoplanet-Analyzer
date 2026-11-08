@@ -48,11 +48,33 @@ def classify_type(df):
     )
     return df
 
+def add_data_quality(df):
+    # Mass: radius and mass measured, high trust, M-R: radius measured, mass estimated from radius, medium trust: size is real mass is a guess
+    #Msini = radius was estimated from mass, not measured, lowest trust, size is a guess
+    df["data_quality"] = df["pl_bmassprov"].map({
+        "Mass": "high",
+        "M-R relationship": "medium",
+        "Msini": "low",
+    })
+    return df
+
+#planet keeps its atmosphere if its gravity beats the energy its star pours in
+def add_atmo_score(df):
+    df["esc_vel"] = (df["pl_bmasse"] / df["pl_rade"])**(1/2)
+    df["atmo_score"]= (df["esc_vel"]**4) / df["pl_insol"]
+
+    df["atmo_class"] = pd.cut(
+        df["atmo_score"],
+        bins=[0, 0.01, 0.1, np.inf],
+        labels=["likely_lost", "marginal", "likely_retained"],
+    )
+    return df
+
 def find_candidates(df):
     mask = df["within_optimistic"] & df["pl_type"].isin(["rocky", "uncertain"])
     cols = ["pl_name", "pl_rade", "pl_insol", "st_teff",
-            "within_conservative", "pl_type", "pl_bmassprov"]
-    return df.loc[mask, cols].sort_values(["within_conservative", "pl_rade"], ascending=[False, True])   
+            "within_conservative", "pl_type", "pl_bmassprov", "data_quality", "atmo_score", "atmo_class"]
+    return df.loc[mask, cols].sort_values(["within_conservative", "pl_rade" ], ascending=[False, True])   
 
 def check_known(candidates):
     #verifies known candidates that could be lost, are not 
@@ -66,10 +88,14 @@ if __name__ == "__main__":
 
     df = add_hz_edgeData(df)
     df = classify_type(df)
+    df = add_data_quality(df)
+    df = add_atmo_score(df)
     candidates = find_candidates(df)
-
+    
     print(f"\n{len(candidates)} candidates (optimistic HZ, rocky or uncertain size)\n")
     check_known(candidates)
 
     df.to_csv("data/planets_scored.csv", index=False)
     candidates.to_csv("data/candidates.csv", index=False)
+
+    
