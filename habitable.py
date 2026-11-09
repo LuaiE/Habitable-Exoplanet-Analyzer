@@ -49,13 +49,16 @@ def classify_type(df):
     return df
 
 def add_data_quality(df):
-    # Mass: radius and mass measured, high trust, M-R: radius measured, mass estimated from radius, medium trust: size is real mass is a guess
-    #Msini = radius was estimated from mass, not measured, lowest trust, size is a guess
-    df["data_quality"] = df["pl_bmassprov"].map({
-        "Mass": "high",
-        "M-R relationship": "medium",
-        "Msini": "low",
-    })
+    # radius counts as measured only if NASA records an error bar for it
+    # high = radius and mass measured, medium = radius measured but mass estimated, low = radius estimated
+    radius_measured = df["pl_radeerr1"].notna()
+    mass_measured = df["pl_bmassprov"] == "Mass"
+
+    df["data_quality"] = np.select(
+        [radius_measured & mass_measured, radius_measured],
+        ["high", "medium"],
+        default="low",
+    )
     return df
 
 #planet keeps its atmosphere if its gravity beats the energy its star pours in
@@ -91,7 +94,7 @@ if __name__ == "__main__":
     df = add_data_quality(df)
     df = add_atmo_score(df)
     candidates = find_candidates(df)
-    
+
     print(f"\n{len(candidates)} candidates (optimistic HZ, rocky or uncertain size)\n")
     check_known(candidates)
 
