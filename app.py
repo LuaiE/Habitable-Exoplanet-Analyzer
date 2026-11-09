@@ -11,7 +11,7 @@ QUALITY_COLORS = {"high": "#184f95", "medium": "#2a78d6", "low": "#86b6ef"}
 st.set_page_config(page_title="Habitable Exoplanet Analyzer", layout="wide")
 
 
-@st.cache_data
+@st.cache_data(ttl="1d") #refresh data once a day
 def load_results():
     return pd.read_csv("results/planets_mc.csv")
 
