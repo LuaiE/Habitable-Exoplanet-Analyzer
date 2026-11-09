@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from habitable import hz_edge   # reuse your formula; don't copy it
+from habitable import hz_edge, rocky_radius, ROCKY_RATIO_MAX, WATER_RATIO_MAX
 from matplotlib.patches import Patch
 from matplotlib.ticker import PercentFormatter
 
@@ -61,9 +61,9 @@ fig_size, ax_size = plt.subplots(figsize=(9, 6))
 
 ax_size.axhline(1.5, color="#898781", linewidth=1, linestyle="--", zorder=2)
 ax_size.axhline(2.0, color="#898781", linewidth=1, linestyle="--", zorder=2)
-ax_size.text(4.5, 1.2, "Rocky", fontsize=8, color="#5f5e5a")
-ax_size.text(4.5, 1.65, "Uncertain", fontsize=8, color="#5f5e5a")
-ax_size.text(4.5, 2.4, "Gaseous", fontsize=8, color="#5f5e5a")
+ax_size.text(4.5, 1.2, "Mostly rocky", fontsize=8, color="#5f5e5a")
+ax_size.text(4.5, 1.65, "Rocky or water-rich", fontsize=8, color="#5f5e5a")
+ax_size.text(4.5, 2.4, "Mostly gas envelope", fontsize=8, color="#5f5e5a")
 
 hz_too_large = df[df["within_optimistic"] & ~df["pl_name"].isin(candidates["pl_name"])]
 ax_size.scatter(hz_too_large["pl_insol"], hz_too_large["pl_rade"], s=25, color="#eb6834",
@@ -114,7 +114,7 @@ for y, p in enumerate(top["p_strong"]):
 
 ax_p.set_xlim(0, 1.08)
 ax_p.xaxis.set_major_formatter(PercentFormatter(1.0))
-ax_p.set_xlabel("Probability of being rocky (radius < 1.5) and in the conservative habitable zone")
+ax_p.set_xlabel("Probability of being in the conservative habitable zone with a solid or ocean surface")
 ax_p.spines[["top", "right"]].set_visible(False)
 
 legend_items = [Patch(color=color, label=f"{quality} data quality") for quality, (color, marker) in quality_style.items()]
@@ -123,5 +123,36 @@ ax_p.legend(handles=legend_items, loc="lower right", fontsize=8, frameon=False)
 
 fig_p.tight_layout()
 fig_p.savefig("probability_ranking.png", dpi=200, bbox_inches="tight")
+
+#MASS-RADIUS GRAPH
+
+fig_mr, ax_mr = plt.subplots(figsize=(9, 6))
+
+masses = np.logspace(-1, np.log10(20), 200)
+ax_mr.fill_between(masses, ROCKY_RATIO_MAX * rocky_radius(masses), WATER_RATIO_MAX * rocky_radius(masses),
+                   color="#2a78d6", alpha=0.12, label="Water world (~10–50% water)")
+ax_mr.plot(masses, rocky_radius(masses), color="#1a1a19", linewidth=1.5, label="Earth-like rock and iron")
+
+high = df[df["composition"].isin(["rocky", "water_world", "gas_envelope"])]
+ax_mr.scatter(high["pl_bmasse"], high["pl_rade"], s=8, color="#c3c2b7", label="Planets with measured mass", zorder=1)
+
+hz_high = df[df["pl_name"].isin(candidates["pl_name"]) & df["composition"].isin(["rocky", "water_world"])]
+ax_mr.scatter(hz_high["pl_bmasse"], hz_high["pl_rade"], s=60, color="#184f95",
+              edgecolor="white", linewidth=1, label="Habitable-zone candidates", zorder=3)
+
+ax_mr.scatter(1, 1, marker="*", s=150, color="#1a1a19", zorder=4, label="Earth")
+
+ax_mr.set_xscale("log")
+ax_mr.set_yscale("log")
+ax_mr.set_xlim(0.1, 20)
+ax_mr.set_ylim(0.5, 3)
+ax_mr.set_yticks([0.5, 1, 1.5, 2, 3], labels=["0.5", "1", "1.5", "2", "3"])
+ax_mr.set_xlabel("Planet mass (Earth = 1)")
+ax_mr.set_ylabel("Planet radius (Earth = 1)")
+ax_mr.set_title("Mass and radius separate rocky worlds from water worlds")
+ax_mr.legend(loc="upper left", fontsize=8, labelspacing=1.2, frameon=False)
+
+fig_mr.tight_layout()
+fig_mr.savefig("mass_radius_diagram.png", dpi=200, bbox_inches="tight")
 
 plt.show()

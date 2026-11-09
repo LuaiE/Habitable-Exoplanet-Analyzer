@@ -11,6 +11,9 @@ HZ_COEFFS = {
 KNOWN_CANDIDATES = ["TRAPPIST-1 e", "TRAPPIST-1 f", "TRAPPIST-1 g", "Kepler-442 b",
                     "Proxima Cen b", "TOI-700 d", "LHS 1140 b", "Teegarden's Star b"]
 
+ROCKY_RATIO_MAX = 1.05   # up to ~10% water by mass
+WATER_RATIO_MAX = 1.24   # up to ~50% water by mass
+
 def hz_edge (starTemp, edgeType):
     solarV, a, b, c, d = HZ_COEFFS[edgeType]
     normalized_temp=starTemp-5780
@@ -52,12 +55,32 @@ def add_data_quality(df):
     # radius counts as measured only if NASA records an error bar for it
     # high = radius and mass measured, medium = radius measured but mass estimated, low = radius estimated
     radius_measured = df["pl_radeerr1"].notna()
-    mass_measured = df["pl_bmassprov"] == "Mass"
+    mass_measured = (df["pl_bmassprov"] == "Mass") & (df["pl_bmasselim"].fillna(0) == 0)
 
     df["data_quality"] = np.select(
         [radius_measured & mass_measured, radius_measured],
         ["high", "medium"],
         default="low",
+    )
+    return df
+
+def rocky_radius(mass):
+    # radius of an Earth-like rock/iron planet of this mass (Zeng et al. 2016)
+    return mass ** (1 / 3.7)
+
+
+def add_composition(df):
+    # only planets with radius AND mass measured can be judged by density
+    has_mass = df["data_quality"] == "high"
+
+    ratio = df["pl_rade"] / rocky_radius(df["pl_bmasse"])
+    impossible = ratio < 0.8   # denser than pure iron: bad data, not a real planet
+
+    df["radius_ratio"] = ratio.where(has_mass)
+    df["composition"] = np.select(
+        [~has_mass | impossible, ratio <= ROCKY_RATIO_MAX, ratio <= WATER_RATIO_MAX],
+        ["unknown", "rocky", "water_world"],
+        default="gas_envelope",
     )
     return df
 
@@ -76,7 +99,7 @@ def add_atmo_score(df):
 def find_candidates(df):
     mask = df["within_optimistic"] & df["pl_type"].isin(["rocky", "uncertain"])
     cols = ["pl_name", "pl_rade", "pl_insol", "st_teff",
-            "within_conservative", "pl_type", "pl_bmassprov", "data_quality", "atmo_score", "atmo_class"]
+            "within_conservative", "pl_type", "pl_bmassprov", "data_quality", "atmo_score", "atmo_class", "composition"]
     return df.loc[mask, cols].sort_values(["within_conservative", "pl_rade" ], ascending=[False, True])   
 
 def check_known(candidates):
@@ -92,6 +115,7 @@ if __name__ == "__main__":
     df = add_hz_edgeData(df)
     df = classify_type(df)
     df = add_data_quality(df)
+    df = add_composition(df)
     df = add_atmo_score(df)
     candidates = find_candidates(df)
 

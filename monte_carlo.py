@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from habitable import hz_edge
+from habitable import hz_edge, rocky_radius, ROCKY_RATIO_MAX, WATER_RATIO_MAX
 from pathlib import Path
 
 # Chance a planet is rocky falls smoothly with radius: 50% at 1.6 Earth radii (Rogers 2015)
@@ -10,10 +10,12 @@ ROCKY_WIDTH = 0.1
 
 
 def rocky_chance(radius):
-    return 1 / (1 + np.exp((radius - ROCKY_MIDPOINT) / ROCKY_WIDTH))
-
+    exponent = np.clip((radius - ROCKY_MIDPOINT) / ROCKY_WIDTH, -50, 50) #caps exponent because of overflow, change does not have big result influence
+    return 1 / (1 + np.exp(exponent))
 
 def get_sigma(planet, col):
+    # Use the archive's error bar (average of upper and lower) when it exists.
+    # Otherwise assume a default: estimated radii +/-30%, star temps +/-100 K, anything else +/-10%.
     err_up = planet[f"{col}err1"]
     err_down = planet[f"{col}err2"]
 
@@ -24,8 +26,6 @@ def get_sigma(planet, col):
         return 100
     if col == "pl_rade":
         return 0.30 * planet[col]
-    if col == "pl_bmasse" and planet["data_quality"] == "medium":
-        return 0.50 * planet[col]
     return 0.10 * planet[col]
 
 def simulate(pl, rng):
@@ -41,15 +41,23 @@ def simulate(pl, rng):
                             & (insol >= hz_edge(teff_used, "max_greenhouse"))
     in_optimistic = valid & (insol <= hz_edge(teff_used, "recent_venus")) \
                           & (insol >= hz_edge(teff_used, "early_mars"))
-    rocky = rocky_chance(radius)
+    if pl["composition"] != "unknown":
+        mass = np.clip(rng.normal(pl["pl_bmasse"], get_sigma(pl, "pl_bmasse"), N), 0.01, None)
+        ratio = radius / rocky_radius(mass)
+        rocky = (ratio <= ROCKY_RATIO_MAX).astype(float)
+        surface = (ratio <= WATER_RATIO_MAX).astype(float)
+    else:
+        rocky = rocky_chance(radius)
+        surface = rocky
 
     return {
         "p_rocky": rocky.mean(),
+        "p_surface": surface.mean(),
         "p_not_gaseous": (radius < 2.0).mean(),
         "p_hz_conservative": in_conservative.mean(),
         "p_hz_optimistic": in_optimistic.mean(),
         "p_candidate": (in_optimistic & (radius < 2.0)).mean(),
-        "p_strong": (in_conservative * rocky).mean(),
+        "p_strong": (in_conservative * surface).mean(),
     }
 
     
@@ -88,7 +96,7 @@ if __name__ == "__main__":
     keep = ["pl_name", "hostname", "discoverymethod", "pl_rade", "pl_insol", "st_teff",
             "pl_radeerr1", "pl_radeerr2", "pl_insolerr1", "pl_insolerr2", "st_tefferr1", "st_tefferr2",
             "pl_type", "data_quality", "within_conservative", "within_optimistic",
-            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky"]
+            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky", "composition", "radius_ratio", "p_surface"]
     
     Path("results").mkdir(exist_ok=True)
     df[keep].to_csv("results/planets_mc.csv", index=False)

@@ -8,6 +8,9 @@ from monte_carlo import get_sigma
 
 QUALITY_COLORS = {"high": "#184f95", "medium": "#2a78d6", "low": "#86b6ef"}
 
+COMPOSITION_TEXT = {"rocky": "Rocky (Earth-like)", "water_world": "Water world",
+                    "gas_envelope": "Gas envelope", "unknown": "Unknown (no measured mass)"}
+
 st.set_page_config(page_title="Habitable Exoplanet Analyzer", layout="wide")
 
 
@@ -80,14 +83,14 @@ col4.metric("≥ 90% likely", int((df["p_strong"] >= 0.9).sum()))
 
 st.subheader("Habitable zone")
 st.caption(f"Showing {len(filtered)} of {len(candidates)} candidates")
-st.plotly_chart(hz_chart(df, filtered), use_container_width=True)
+st.plotly_chart(hz_chart(df, filtered), width="stretch")
 
 st.subheader("Top candidates")
 top = filtered.sort_values("p_strong", ascending=False).copy()
 top["Probability"] = top["p_strong"] * 100
 
 st.dataframe(
-    top[["pl_name", "Probability", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
+    top[["pl_name", "Probability", "composition", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
     hide_index=True,
     column_config={
         "pl_name": "Planet",
@@ -95,7 +98,7 @@ st.dataframe(
         "pl_rade": st.column_config.NumberColumn("Radius (Earth = 1)", format="%.2f"),
         "pl_insol": st.column_config.NumberColumn("Starlight (Earth = 1)", format="%.2f"),
         "st_teff": st.column_config.NumberColumn("Star temp (K)", format="%.0f"),
-        "data_quality": "Data quality",
+        "data_quality": "Data quality", "composition": "Composition",
     },
 )
 
@@ -108,26 +111,28 @@ else:
     planet = df[df["pl_name"] == name].iloc[0]
     sigma = get_sigma(planet, "pl_rade")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Probability", f"{planet['p_strong']:.0%}")
-    c2.metric("Radius (Earth = 1)", f"{planet['pl_rade']:.2f} ± {sigma:.2f}")
-    c3.metric("Starlight (Earth = 1)", f"{planet['pl_insol']:.2f}")
-    c4.metric("Star temp (K)", f"{planet['st_teff']:.0f}")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("HZ + solid or ocean surface", f"{planet['p_strong']:.0%}")
+    c2.metric("Earth-like rocky", f"{planet['p_rocky']:.0%}")
+    c3.metric("Radius (Earth = 1)", f"{planet['pl_rade']:.2f} ± {sigma:.2f}")
+    c4.metric("Starlight (Earth = 1)", f"{planet['pl_insol']:.2f}")
+    c5.metric("Star temp (K)", f"{planet['st_teff']:.0f}")
 
     st.write(f"**Host star:** {planet['hostname']}  ·  **Discovered by:** {planet['discoverymethod']}  ·  "
-             f"**Data quality:** {planet['data_quality']}")
+             f"**Data quality:** {planet['data_quality']}  ·  "
+             f"**Composition:** {COMPOSITION_TEXT[planet['composition']]}")
 
-    if planet["p_rocky"] < planet["p_hz_conservative"]:
-        st.write(f"Held back mainly by **size**: {planet['p_rocky']:.0%} chance of being confidently rocky, "
+    if planet["p_surface"] < planet["p_hz_conservative"]:
+        st.write(f"Held back mainly by **composition**: {planet['p_surface']:.0%} chance of a solid or ocean surface, "
                  f"{planet['p_hz_conservative']:.0%} chance of being in the conservative habitable zone.")
     else:
         st.write(f"Held back mainly by **position**: {planet['p_hz_conservative']:.0%} chance of being in the "
-                 f"conservative habitable zone, {planet['p_rocky']:.0%} chance of being confidently rocky.")
-
+                 f"conservative habitable zone, {planet['p_surface']:.0%} chance of a solid or ocean surface.")
+        
     samples = np.random.default_rng(77).normal(planet["pl_rade"], sigma, 10000)
     hist = go.Figure(go.Histogram(x=samples, nbinsx=60, marker_color=QUALITY_COLORS[planet["data_quality"]]))
     hist.add_vline(x=1.5, line_dash="dash", line_color="#898781", annotation_text="Rocky limit")
     hist.add_vline(x=2.0, line_dash="dot", line_color="#898781", annotation_text="Gaseous above")
     hist.update_layout(height=320, margin=dict(t=30), showlegend=False,
                        xaxis_title="Simulated radius (Earth = 1)", yaxis_title="Simulations")
-    st.plotly_chart(hist, use_container_width=True)
+    st.plotly_chart(hist, width="stretch")

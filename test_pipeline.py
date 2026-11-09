@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 
 from fetch_data import fill_derived, elim_bad_rows
-from habitable import hz_edge, add_hz_edgeData, classify_type, add_data_quality, add_atmo_score
+from habitable import hz_edge, add_hz_edgeData, classify_type, add_data_quality, add_atmo_score, add_composition
 from monte_carlo import get_sigma, simulate
 
 
@@ -66,13 +66,13 @@ def test_size_classes():
 
 def test_data_quality_tiers():
     planets = pd.DataFrame({
-        "pl_radeerr1": [0.01, 0.01, np.nan],
-        "pl_bmassprov": ["Mass", "M-R relationship", "Mass"],
+        "pl_radeerr1": [0.01, 0.01, np.nan, 0.01],
+        "pl_bmassprov": ["Mass", "M-R relationship", "Mass", "Mass"],
+        "pl_bmasselim": [0, 0, 0, 1],
     })
     result = add_data_quality(planets)
-    assert list(result["data_quality"]) == ["high", "medium", "low"]
-
-
+    assert list(result["data_quality"]) == ["high", "medium", "low", "medium"]
+    
 def test_atmosphere_score_solar_system():
     planets = pd.DataFrame({"pl_name": ["Earth", "Mars"], "pl_bmasse": [1.0, 0.107],
                             "pl_rade": [1.0, 0.532], "pl_insol": [1.0, 0.43]})
@@ -88,7 +88,8 @@ def make_planet(rade, insol, teff, rade_err=0.01, insol_err=0.01, teff_err=10):
         "pl_rade": rade, "pl_radeerr1": rade_err, "pl_radeerr2": -rade_err,
         "pl_insol": insol, "pl_insolerr1": insol_err, "pl_insolerr2": -insol_err,
         "st_teff": teff, "st_tefferr1": teff_err, "st_tefferr2": -teff_err,
-        "data_quality": "high",
+        "data_quality": "high", "composition": "unknown", "pl_bmasse": 1.0, 
+        "pl_bmasseerr1": 0.05, "pl_bmasseerr2": -0.05,
     })
 
 
@@ -117,3 +118,22 @@ def test_same_seed_gives_same_results():
     first = simulate(planet, np.random.default_rng(42))
     second = simulate(planet, np.random.default_rng(42))
     assert first == second
+
+def test_composition():
+    planets = pd.DataFrame({
+        "pl_name": ["Earth", "LHS 1140 b", "puffy", "no mass", "impossible"],
+        "pl_rade": [1.0, 1.73, 2.5, 1.0, 1.4],
+        "pl_bmasse": [1.0, 5.6, 5.0, 1.0, 35.0],
+        "data_quality": ["high", "high", "high", "low", "high"],
+    })
+    result = add_composition(planets)
+    assert list(result["composition"]) == ["rocky", "water_world", "gas_envelope", "unknown", "unknown"]
+
+
+def test_water_world_counts_as_having_a_surface():
+    planet = make_planet(1.73, 0.43, 3096, rade_err=0.025)
+    planet["composition"] = "water_world"
+    planet["pl_bmasse"], planet["pl_bmasseerr1"], planet["pl_bmasseerr2"] = 5.6, 0.19, -0.19
+    result = simulate(planet, np.random.default_rng(0))
+    assert result["p_surface"] > 0.95
+    assert result["p_rocky"] < 0.05

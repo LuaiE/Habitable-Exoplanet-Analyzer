@@ -2,7 +2,7 @@ name: Update NASA data
 
 on:
   schedule:
-    - cron: "17 6 * * 1"
+    - cron: "3 14 * * 1"
   workflow_dispatch:
 
 permissions:
