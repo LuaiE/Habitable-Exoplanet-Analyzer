@@ -4,6 +4,15 @@ import pandas as pd
 from habitable import hz_edge
 from pathlib import Path
 
+# Chance a planet is rocky falls smoothly with radius: 50% at 1.6 Earth radii (Rogers 2015)
+ROCKY_MIDPOINT = 1.6
+ROCKY_WIDTH = 0.1
+
+
+def rocky_chance(radius):
+    return 1 / (1 + np.exp((radius - ROCKY_MIDPOINT) / ROCKY_WIDTH))
+
+
 def get_sigma(planet, col):
     err_up = planet[f"{col}err1"]
     err_down = planet[f"{col}err2"]
@@ -32,14 +41,15 @@ def simulate(pl, rng):
                             & (insol >= hz_edge(teff_used, "max_greenhouse"))
     in_optimistic = valid & (insol <= hz_edge(teff_used, "recent_venus")) \
                           & (insol >= hz_edge(teff_used, "early_mars"))
+    rocky = rocky_chance(radius)
 
     return {
-        "p_rocky": (radius < 1.5).mean(),
+        "p_rocky": rocky.mean(),
         "p_not_gaseous": (radius < 2.0).mean(),
         "p_hz_conservative": in_conservative.mean(),
         "p_hz_optimistic": in_optimistic.mean(),
         "p_candidate": (in_optimistic & (radius < 2.0)).mean(),
-        "p_strong": (in_conservative & (radius < 1.5)).mean(),
+        "p_strong": (in_conservative * rocky).mean(),
     }
 
     
