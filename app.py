@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import plotly.graph_objects as go
+import re
 
 from habitable import hz_edge
 from monte_carlo import get_sigma
@@ -10,6 +11,13 @@ QUALITY_COLORS = {"high": "#184f95", "medium": "#2a78d6", "low": "#86b6ef"}
 
 COMPOSITION_TEXT = {"rocky": "Rocky (Earth-like)", "water_world": "Water world",
                     "gas_envelope": "Gas envelope", "unknown": "Unknown (no measured mass)"}
+
+NASA_NAME_FIXES = {"Proxima Cen b": "proxima-centauri-b"}
+
+
+def nasa_catalog_url(name):
+    slug = NASA_NAME_FIXES.get(name) or re.sub(r"[^a-z0-9]+", "-", name.lower().replace("'", "")).strip("-")
+    return f"https://science.nasa.gov/exoplanet-catalog/{slug}/"
 
 st.set_page_config(page_title="Habitable Exoplanet Analyzer", layout="wide")
 
@@ -56,6 +64,49 @@ def hz_chart(df, candidates):
     fig.update_layout(height=550, legend=dict(font=dict(size=11)), margin=dict(t=20))
     return fig
 
+def system_chart(df, planet):
+    system = df[df["hostname"] == planet["hostname"]].dropna(subset=["pl_orbsmax"])
+    luminosity = (system["pl_insol"] * system["pl_orbsmax"] ** 2).median()
+    if system.empty or not np.isfinite(luminosity):
+        return None
+
+    teff = np.clip(planet["st_teff"], 2600, 7200)
+    edge = {name: np.sqrt(luminosity / hz_edge(teff, name))
+            for name in ["recent_venus", "runaway_greenhouse", "max_greenhouse", "early_mars"]}
+
+    theta = np.linspace(0, 2 * np.pi, 200)
+    fig = go.Figure()
+
+    for inner, outer, name, opacity in [("recent_venus", "early_mars", "Optimistic HZ", 0.15),
+                                        ("runaway_greenhouse", "max_greenhouse", "Conservative HZ", 0.35)]:
+        r_in, r_out = edge[inner], edge[outer]
+        x = np.concatenate([r_out * np.cos(theta), r_in * np.cos(theta[::-1])])
+        y = np.concatenate([r_out * np.sin(theta), r_in * np.sin(theta[::-1])])
+        fig.add_trace(go.Scatter(x=x, y=y, fill="toself", mode="none", name=name,
+                                 fillcolor=f"rgba(27, 175, 122, {opacity})", hoverinfo="skip"))
+
+    angles = np.linspace(0, 2 * np.pi, len(system), endpoint=False) + 0.4
+    for angle, (_, p) in zip(angles, system.sort_values("pl_orbsmax").iterrows()):
+        a = p["pl_orbsmax"]
+        selected = p["pl_name"] == planet["pl_name"]
+        fig.add_trace(go.Scatter(x=a * np.cos(theta), y=a * np.sin(theta), mode="lines",
+                                 line=dict(color="#898781", width=1), showlegend=False, hoverinfo="skip"))
+        fig.add_trace(go.Scatter(
+            x=[a * np.cos(angle)], y=[a * np.sin(angle)], mode="markers+text",
+            text=[p["pl_name"].split()[-1]], textposition="top center", showlegend=False,
+            marker=dict(size=14 if selected else 9, color="#184f95" if selected else "#5f5e5a",
+                        line=dict(width=1, color="white")),
+            hovertemplate=f"<b>{p['pl_name']}</b><br>Orbit: {a:.3f} AU<extra></extra>",
+        ))
+
+    fig.add_trace(go.Scatter(x=[0], y=[0], mode="markers", name=planet["hostname"],
+                             marker=dict(size=18, color="#eda100"), hoverinfo="skip"))
+
+    reach = 1.15 * max(system["pl_orbsmax"].max(), edge["early_mars"])
+    fig.update_xaxes(range=[-reach, reach], title="Distance from star (AU)", zeroline=False)
+    fig.update_yaxes(range=[-reach, reach], scaleanchor="x", showticklabels=False, zeroline=False)
+    fig.update_layout(height=500, margin=dict(t=20), legend=dict(font=dict(size=11)))
+    return fig
 
 df = load_results()
 candidates = df[df["within_optimistic"] & df["pl_type"].isin(["rocky", "uncertain"])]
@@ -141,3 +192,14 @@ else:
     hist.update_layout(height=320, margin=dict(t=30), showlegend=False,
                        xaxis_title="Simulated radius (Earth = 1)", yaxis_title="Simulations")
     st.plotly_chart(hist, width="stretch")
+
+    st.markdown(f"[{planet['pl_name']} on NASA Science ↗]({nasa_catalog_url(planet['pl_name'])})  ·  "
+                f"[{planet['hostname']} on the NASA Exoplanet Archive ↗]"
+                f"(https://exoplanetarchive.ipac.caltech.edu/overview/{planet['hostname'].replace(' ', '%20')})")
+    
+    st.markdown(f"**The {planet['hostname']} system**")
+    system_fig = system_chart(df, planet)
+    if system_fig is None:
+        st.caption("Not enough orbit data to draw this system.")
+    else:
+        st.plotly_chart(system_fig, width="stretch")

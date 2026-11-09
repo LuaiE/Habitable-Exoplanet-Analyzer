@@ -4,8 +4,7 @@ Finds the confirmed exoplanets most likely to support liquid surface water, usin
 
 ![Habitable zone diagram](hz_diagram.png)
 
-**[Live dashboard](https://luaie-habitable-exoplanet-analyzer-app-okvdqz.streamlit.app/)**: explore every candidate interactively.
-Data, charts and the dashboard update automatically every Monday with the latest NASA archive data.
+**[Live dashboard](https://luaie-habitable-exoplanet-analyzer-app-okvdqz.streamlit.app/)**: explore every candidate interactively. Filter by probability and data quality, inspect each planet's simulated uncertainty, and view its star system with the habitable zone drawn to scale. Data, charts and the dashboard update automatically every Monday with the latest NASA archive data.
 
 ## How to Run
 
@@ -40,16 +39,16 @@ Each planet is then simulated **10,000 times** with values drawn from within its
 
 _November 2026 archive snapshot. Numbers update as NASA adds planets._
 
-| Metric                                                       | Result    |
-| ------------------------------------------------------------ | --------- |
-| Planets analysed                                             | 6,464     |
-| In the optimistic habitable zone                             | 292       |
-| Rocky habitable-zone candidates                              | **49**    |
-| Candidates in the conservative zone                          | 31        |
-| At least 50% likely to be in the conservative zone with a solid or ocean surface | 20 |
-| At least 90% likely to be in the conservative zone with a solid or ocean surface | **8** |
-| Well-known candidates recovered                              | **9 / 9** |
-| Candidates with mass _and_ radius measured                   | 5         |
+| Metric                                                                           | Result    |
+| -------------------------------------------------------------------------------- | --------- |
+| Planets analysed                                                                 | 6,464     |
+| In the optimistic habitable zone                                                 | 292       |
+| Rocky habitable-zone candidates                                                  | **49**    |
+| Candidates in the conservative zone                                              | 31        |
+| At least 50% likely to be in the conservative zone with a solid or ocean surface | 20        |
+| At least 90% likely to be in the conservative zone with a solid or ocean surface | **8**     |
+| Well-known candidates recovered                                                  | **9 / 9** |
+| Candidates with mass _and_ radius measured                                       | 5         |
 
 **Key findings**
 
@@ -108,11 +107,11 @@ Probability of being in the conservative habitable zone with a solid or ocean su
 
 **Data quality**
 
-| Tier   | What was measured                                       | Candidates |
-| ------ | ------------------------------------------------------- | ---------- |
-| High   | Mass and radius                                         | 5          |
-| Medium | Radius only (mass estimated, or only an upper limit)    | 23         |
-| Low    | Radius estimated, not observed                          | 21         |
+| Tier   | What was measured                                    | Candidates |
+| ------ | ---------------------------------------------------- | ---------- |
+| High   | Mass and radius                                      | 5          |
+| Medium | Radius only (mass estimated, or only an upper limit) | 23         |
+| Low    | Radius estimated, not observed                       | 21         |
 
 ## Files
 
