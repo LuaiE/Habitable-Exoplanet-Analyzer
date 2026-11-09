@@ -3,7 +3,9 @@ from pathlib import Path
 
 def fetch_data():
     cols = ["pl_name", "hostname", "discoverymethod", "pl_controv_flag", "pl_rade", "pl_bmasse", "pl_bmassprov", "pl_orbper", "pl_orbsmax", "pl_orbeccen", 
-            "pl_insol", "pl_eqt", "st_teff", "st_rad", "st_mass", "st_lum"]  # all needed collumns
+            "pl_insol", "pl_eqt", "st_teff", "st_rad", "st_mass", "st_lum", "pl_radeerr1", "pl_radeerr2", "pl_insolerr1", "pl_insolerr2",
+            "st_tefferr1", "st_tefferr2", "pl_bmasseerr1", "pl_bmasseerr2"]  # all needed collumns
+    
     query = "select " + ",".join(cols) + " from pscomppars" #allows selecting each collumnn from the table
     url = ("https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query="
         + query.replace(" ", "+") + "&format=csv")
