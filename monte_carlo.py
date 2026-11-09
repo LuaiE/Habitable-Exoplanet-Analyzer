@@ -58,6 +58,7 @@ def simulate(pl, rng):
         "p_hz_optimistic": in_optimistic.mean(),
         "p_candidate": (in_optimistic & (radius < 2.0)).mean(),
         "p_strong": (in_conservative * surface).mean(),
+        "p_optimistic": (in_optimistic * surface).mean(),
     }
 
     
@@ -96,7 +97,7 @@ if __name__ == "__main__":
     keep = ["pl_name", "hostname", "discoverymethod", "pl_rade", "pl_insol", "st_teff",
             "pl_radeerr1", "pl_radeerr2", "pl_insolerr1", "pl_insolerr2", "st_tefferr1", "st_tefferr2",
             "pl_type", "data_quality", "within_conservative", "within_optimistic",
-            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky", "composition", "radius_ratio", "p_surface", "disputed", "pl_orbsmax"]
+            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky", "composition", "radius_ratio", "p_surface", "disputed", "pl_orbsmax", "p_optimistic"]
     
     Path("results").mkdir(exist_ok=True)
     df[keep].to_csv("results/planets_mc.csv", index=False)

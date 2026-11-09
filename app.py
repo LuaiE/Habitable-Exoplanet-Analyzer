@@ -112,7 +112,7 @@ df = load_results()
 candidates = df[df["within_optimistic"] & df["pl_type"].isin(["rocky", "uncertain"])]
 
 st.sidebar.header("Filters")
-min_prob = st.sidebar.slider("Minimum probability (%)", 0, 100, 0, step=5)
+min_prob = st.sidebar.slider("Minimum probability, conservative HZ (%)", 0, 100, 0, step=5)
 qualities = st.sidebar.multiselect("Data quality", ["high", "medium", "low"], default=["high", "medium", "low"])
 teff_range = st.sidebar.slider("Star temperature (K)", 2500, 7500, (2500, 7500), step=100)
 
@@ -139,15 +139,17 @@ st.plotly_chart(hz_chart(df, filtered), width="stretch")
 st.subheader("Top candidates")
 top = filtered.sort_values("p_strong", ascending=False).copy()
 top["Probability"] = top["p_strong"] * 100
+top["Optimistic"] = top["p_optimistic"] * 100
 top["Status"] = np.where(top["disputed"], "⚠️ Disputed", "")
 
 st.dataframe(
-    top[["pl_name", "Status", "Probability", "composition", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
+    top[["pl_name", "Status", "Probability", "Optimistic", "composition", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
     hide_index=True,
     column_config={
         "pl_name": "Planet",
         "Status": st.column_config.TextColumn("Status", width=85),
-        "Probability": st.column_config.ProgressColumn("Probability", min_value=0, max_value=100, format="%.0f%%"),
+        "Probability": st.column_config.ProgressColumn("Conservative HZ", min_value=0, max_value=100, format="%.0f%%"),
+        "Optimistic": st.column_config.ProgressColumn("Optimistic HZ", min_value=0, max_value=100, format="%.0f%%"),
         "pl_rade": st.column_config.NumberColumn("Radius (Earth = 1)", format="%.2f"),
         "pl_insol": st.column_config.NumberColumn("Starlight (Earth = 1)", format="%.2f"),
         "st_teff": st.column_config.NumberColumn("Star temp (K)", format="%.0f"),
@@ -167,12 +169,14 @@ else:
                    "(flagged as controversial in the NASA Exoplanet Archive). Treat its ranking with caution.")
     sigma = get_sigma(planet, "pl_rade")
 
-    c1, c2, c3, c4, c5 = st.columns(5)
-    c1.metric("HZ + solid or ocean surface", f"{planet['p_strong']:.0%}")
-    c2.metric("Earth-like rocky", f"{planet['p_rocky']:.0%}")
-    c3.metric("Radius (Earth = 1)", f"{planet['pl_rade']:.2f} ± {sigma:.2f}")
-    c4.metric("Starlight (Earth = 1)", f"{planet['pl_insol']:.2f}")
-    c5.metric("Star temp (K)", f"{planet['st_teff']:.0f}")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Conservative HZ + solid or ocean surface", f"{planet['p_strong']:.0%}")
+    c2.metric("Optimistic HZ + solid or ocean surface", f"{planet['p_optimistic']:.0%}")
+    c3.metric("Earth-like rocky", f"{planet['p_rocky']:.0%}")
+    c4, c5, c6 = st.columns(3)
+    c4.metric("Radius (Earth = 1)", f"{planet['pl_rade']:.2f} ± {sigma:.2f}")
+    c5.metric("Starlight (Earth = 1)", f"{planet['pl_insol']:.2f}")
+    c6.metric("Star temp (K)", f"{planet['st_teff']:.0f}")
 
     st.write(f"**Host star:** {planet['hostname']}  ·  **Discovered by:** {planet['discoverymethod']}  ·  "
              f"**Data quality:** {planet['data_quality']}  ·  "
@@ -192,6 +196,7 @@ else:
     hist.update_layout(height=320, margin=dict(t=30), showlegend=False,
                        xaxis_title="Simulated radius (Earth = 1)", yaxis_title="Simulations")
     st.plotly_chart(hist, width="stretch")
+    st.caption("Shows radius uncertainty only. For planets with measured mass, composition comes from density instead.")
 
     st.markdown(f"[{planet['pl_name']} on NASA Science ↗]({nasa_catalog_url(planet['pl_name'])})  ·  "
                 f"[{planet['hostname']} on the NASA Exoplanet Archive ↗]"
@@ -203,3 +208,5 @@ else:
         st.caption("Not enough orbit data to draw this system.")
     else:
         st.plotly_chart(system_fig, width="stretch")
+        st.caption("Orbit distances and habitable-zone rings are to scale. Planet and star markers are not, "
+                   "and planets are spaced evenly around their orbits for readability.")

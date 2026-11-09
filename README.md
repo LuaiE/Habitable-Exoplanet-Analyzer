@@ -25,13 +25,11 @@ Results are saved to `data/planets_mc.csv`. To pull fresh data from NASA, delete
 
 ## How It Works
 
-The pipeline downloads every confirmed exoplanet from the NASA Exoplanet Archive and runs each one through three tests:
+The pipeline downloads every confirmed exoplanet from the NASA Exoplanet Archive and runs each one through two tests:
 
 1. **Habitable zone:** is the planet receiving the right amount of starlight for liquid water, given its star's temperature? Uses the Kopparapu et al. (2014) climate-model limits.
 2. **Solid or ocean surface:** is it rocky or a water world, rather than wrapped in thick gas? Where mass and radius are both measured, the planet's density is compared with rock and water models from Zeng et al. (2016); otherwise its radius is used, following Rogers (2015).
-3. **Atmosphere retention:** is its gravity strong enough to hold an atmosphere against its star's energy? Uses a simplified "cosmic shoreline" score after Zahnle & Catling (2017).
-
-Planets that pass the first two tests become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
+Planets in the optimistic habitable zone and smaller than 2 Earth radii become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
 
 Each planet is then simulated **10,000 times** with values drawn from within its measurement error bars. The share of simulations that pass the tests becomes a **probability**, showing how confident each result really is.
 
@@ -43,7 +41,7 @@ _November 2026 archive snapshot. Numbers update as NASA adds planets._
 | -------------------------------------------------------------------------------- | --------- |
 | Planets analysed                                                                 | 6,464     |
 | In the optimistic habitable zone                                                 | 292       |
-| Rocky habitable-zone candidates                                                  | **49**    |
+| Small (under 2 Earth radii) habitable-zone candidates                            | **49**    |
 | Candidates in the conservative zone                                              | 31        |
 | At least 50% likely to be in the conservative zone with a solid or ocean surface | 20        |
 | At least 90% likely to be in the conservative zone with a solid or ocean surface | **8**     |
@@ -56,6 +54,7 @@ _November 2026 archive snapshot. Numbers update as NASA adds planets._
 - **LHS 1140 b is the strongest candidate, as a likely water world rather than an Earth-like rocky planet.** It is too large for Earth-like rock at its measured mass, which matches the 2024 finding that it is probably 10–20% water.
 - **Most habitable-zone planets are too large to be rocky:** only 49 of 292 pass the size test.
 - **Nearly every candidate orbits a cool red dwarf.** This is largely detection bias: red dwarfs' habitable zones are close in, so planets there are easier to detect.
+- **18 of the 49 candidates lie only in the optimistic zone**, including Teegarden's Star b, TRAPPIST-1 d and TOI-700 e. They score near 0% on the conservative measure but much higher on the optimistic one, so the dashboard shows both.
 - **Many "rocky" labels rest on estimates.** For 21 candidates, the radius was never observed.
 - **4 candidates have a disputed status**, including the famous Kepler-186 f. They are kept and ranked, but flagged with a warning rather than silently removed.
 
@@ -118,13 +117,14 @@ Probability of being in the conservative habitable zone with a solid or ocean su
 ```
 habitable-exoplanet-analyzer/
 ├── fetch_data.py             — Downloads, caches and cleans NASA data
-├── habitable.py              — Habitable zone, planet type, data quality, atmosphere score
+├── habitable.py              — Habitable zone, planet type, data quality, composition
 ├── monte_carlo.py            — Simulates measurement uncertainty, outputs probabilities
 ├── plots.py                  — Generates the charts
 ├── app.py                    — Interactive Streamlit dashboard
 ├── test_pipeline.py          — Automated tests (pytest)
 ├── results/planets_mc.csv    — Results used by the dashboard
 ├── .github/workflows/        — Weekly automated data update
+├── .devcontainer/            — Codespaces setup (added by Streamlit)
 ├── hz_diagram.png            — Habitable zone chart
 ├── radius_diagram.png        — Planet size chart
 ├── mass_radius_diagram.png   — Composition from mass and radius
@@ -148,7 +148,6 @@ habitable-exoplanet-analyzer/
 - **A second data catch:** many archive masses are only upper limits, flagged separately in the data. Treating them as measurements made physically impossible planets look rocky (Kepler-62 f at "35 Earth masses"). Limits are now excluded, which halved the number of planets classed as rocky by density
 - **Disputed planets are flagged, not removed:** NASA marks 58 planets whose existence has been questioned in published research. They were first removed outright, which silently dropped Kepler-186 f. They are now kept, ranked and shown with a warning, and Kepler-186 f was added to the validation list
 - **Automated weekly update:** a scheduled GitHub Actions workflow reruns the full pipeline and tests every Monday and commits the updated results; the live dashboard redeploys automatically
-- Atmosphere scores are checked against the Solar System: Earth = 1.0, Mars ≈ 0.09
 
 ## Limitations
 
@@ -157,7 +156,7 @@ habitable-exoplanet-analyzer/
 - Water worlds can only be identified for planets with measured mass; for the rest, a water-rich planet near 1.5–2 Earth radii is scored as probably not rocky
 - The composition thresholds come from simplified rock and water models; real planets can mix iron, rock, water and gas in ways that produce the same density
 - Planets with estimated radii depend on the assumed default uncertainties, so their probabilities are less reliable
-- The atmosphere score ignores X-ray/UV radiation, which red dwarfs emit heavily, so real risk is likely higher for most candidates
+- An atmosphere-retention score (after Zahnle & Catling 2017; Earth = 1.0, Mars ≈ 0.09) was built but excluded from the ranking: it needs measured masses, which most candidates lack, and ignores X-ray/UV radiation, which dominates atmospheric loss around the red dwarfs most candidates orbit
 - Magnetic fields, plate tectonics and actual atmospheres can't be assessed from this data
 - Being in the habitable zone means liquid water is _possible_, not confirmed
 
