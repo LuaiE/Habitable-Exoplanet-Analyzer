@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 from habitable import hz_edge
+from pathlib import Path
 
 def get_sigma(planet, col):
     err_up = planet[f"{col}err1"]
@@ -73,3 +74,11 @@ if __name__ == "__main__":
     cand_names = pd.read_csv("data/candidates.csv")["pl_name"]
     print(df[df["pl_name"].isin(cand_names)]["data_quality"].value_counts())
     print(ranked[cols].head(20).round(2).to_string(index=False))
+
+    keep = ["pl_name", "hostname", "discoverymethod", "pl_rade", "pl_insol", "st_teff",
+            "pl_radeerr1", "pl_radeerr2", "pl_insolerr1", "pl_insolerr2", "st_tefferr1", "st_tefferr2",
+            "pl_type", "data_quality", "within_conservative", "within_optimistic",
+            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky"]
+    
+    Path("results").mkdir(exist_ok=True)
+    df[keep].to_csv("results/planets_mc.csv", index=False)
