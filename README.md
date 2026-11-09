@@ -42,22 +42,23 @@ _November 2026 archive snapshot. Numbers update as NASA adds planets._
 
 | Metric                                                       | Result    |
 | ------------------------------------------------------------ | --------- |
-| Planets analysed                                             | 6,406     |
-| In the optimistic habitable zone                             | 284       |
-| Rocky habitable-zone candidates                              | **45**    |
-| Candidates in the conservative zone                          | 27        |
-| At least 50% likely to be in the conservative zone with a solid or ocean surface | 17 |
+| Planets analysed                                             | 6,464     |
+| In the optimistic habitable zone                             | 292       |
+| Rocky habitable-zone candidates                              | **49**    |
+| Candidates in the conservative zone                          | 31        |
+| At least 50% likely to be in the conservative zone with a solid or ocean surface | 20 |
 | At least 90% likely to be in the conservative zone with a solid or ocean surface | **8** |
-| Well-known candidates recovered                              | **8 / 8** |
+| Well-known candidates recovered                              | **9 / 9** |
 | Candidates with mass _and_ radius measured                   | 5         |
 
 **Key findings**
 
-- **Only 8 planets are near-certain once measurement uncertainty is included.** The 45 candidates range from near-certain down to coin flips.
+- **Only 8 planets are near-certain once measurement uncertainty is included.** The 49 candidates range from near-certain down to coin flips.
 - **LHS 1140 b is the strongest candidate, as a likely water world rather than an Earth-like rocky planet.** It is too large for Earth-like rock at its measured mass, which matches the 2024 finding that it is probably 10–20% water.
-- **Most habitable-zone planets are too large to be rocky:** only 45 of 284 pass the size test.
+- **Most habitable-zone planets are too large to be rocky:** only 49 of 292 pass the size test.
 - **Nearly every candidate orbits a cool red dwarf.** This is largely detection bias: red dwarfs' habitable zones are close in, so planets there are easier to detect.
-- **Many "rocky" labels rest on estimates.** For 19 candidates, the radius was never observed.
+- **Many "rocky" labels rest on estimates.** For 21 candidates, the radius was never observed.
+- **4 candidates have a disputed status**, including the famous Kepler-186 f. They are kept and ranked, but flagged with a warning rather than silently removed.
 
 ![Probability ranking](probability_ranking.png)
 
@@ -71,7 +72,7 @@ Probability of being in the conservative habitable zone with a solid or ocean su
 
 | Planet             | Probability | Earth-like rocky | Composition | Radius (Earth = 1) | Starlight (Earth = 1) | Star Temp (K) | Data Quality |
 | ------------------ | ----------- | ---------------- | ----------- | ------------------ | --------------------- | ------------- | ------------ |
-| LHS 1140 b         | 100%        | 3%               | Water world | 1.73               | 0.43                  | 3096          | High         |
+| LHS 1140 b         | 100%        | 2%               | Water world | 1.73               | 0.43                  | 3096          | High         |
 | TRAPPIST-1 e       | 99%         | 98%              | Rocky       | 0.92               | 0.65                  | 2566          | High         |
 | TRAPPIST-1 f       | 99%         | 85%              | Rocky       | 1.04               | 0.37                  | 2566          | High         |
 | TRAPPIST-1 g       | 99%         | 58%              | Rocky       | 1.13               | 0.25                  | 2566          | High         |
@@ -110,8 +111,8 @@ Probability of being in the conservative habitable zone with a solid or ocean su
 | Tier   | What was measured                                       | Candidates |
 | ------ | ------------------------------------------------------- | ---------- |
 | High   | Mass and radius                                         | 5          |
-| Medium | Radius only (mass estimated, or only an upper limit)    | 21         |
-| Low    | Radius estimated, not observed                          | 19         |
+| Medium | Radius only (mass estimated, or only an upper limit)    | 23         |
+| Low    | Radius estimated, not observed                          | 21         |
 
 ## Files
 
@@ -138,14 +139,15 @@ habitable-exoplanet-analyzer/
 
 - Data comes from the archive's **Planetary Systems Composite Parameters** table via its TAP API, with one row per planet and the best available values
 - **Gaps are filled with physics, not dropped:** missing orbital distances come from Kepler's third law, and missing starlight from stellar luminosity, recovering 760 values. Every calculated value is flagged
-- **Validated against known candidates:** the method recovers all 8 well-known habitable-zone planets tested
+- **Validated against known candidates:** the method recovers all 9 well-known habitable-zone planets tested
 - **Cool-star edge case:** TRAPPIST-1 (2566 K) sits just below the Kopparapu formula's calibrated range (2600–7200 K). Slightly-out-of-range stars use the nearest calibrated value and are flagged. For TRAPPIST-1 this changes the zone edges by under 0.5% and reproduces the limits published by Gillon et al. (2017)
 - **Missing error bars get honest defaults:** ±30% for estimated radii, ±10% for other values and ±100 K for star temperatures. Missing errors almost always mean an estimated value, so assuming zero error would make the least certain planets look the most certain
-- **Monte Carlo checks:** probabilities agree with the yes/no classification for all 45 candidates (Kepler-440 b is a borderline 52%), shift by about 1 percentage point between random seeds, and fully measured planets are unaffected by the default uncertainties
+- **Monte Carlo checks:** probabilities agree with the yes/no classification for the candidates (Kepler-440 b is a borderline 52%), shift by about 1 percentage point between random seeds, and fully measured planets are unaffected by the default uncertainties
 - **A bug the checks caught:** quality tiers were first based on whether the _mass_ was measured, so radial-velocity planets with estimated radii (such as GJ 1061 d) were rated high quality, and GJ 1061 d ranked #1. Tiers now depend on whether the radius was actually observed
 - **Composition from density:** where mass and radius are both measured, the radius is compared with an Earth-like rocky planet of the same mass (Zeng et al. 2016) to separate rocky planets, water worlds and gas envelopes. Water worlds count as having a habitable surface; mass is simulated alongside radius, so borderline planets get probabilities
 - **The rocky boundary is a smooth transition, not a hard cutoff:** for planets without a measured mass, the chance of being rocky falls gradually with radius, reaching 50% at 1.6 Earth radii (Rogers 2015)
 - **A second data catch:** many archive masses are only upper limits, flagged separately in the data. Treating them as measurements made physically impossible planets look rocky (Kepler-62 f at "35 Earth masses"). Limits are now excluded, which halved the number of planets classed as rocky by density
+- **Disputed planets are flagged, not removed:** NASA marks 58 planets whose existence has been questioned in published research. They were first removed outright, which silently dropped Kepler-186 f. They are now kept, ranked and shown with a warning, and Kepler-186 f was added to the validation list
 - **Automated weekly update:** a scheduled GitHub Actions workflow reruns the full pipeline and tests every Monday and commits the updated results; the live dashboard redeploys automatically
 - Atmosphere scores are checked against the Solar System: Earth = 1.0, Mars ≈ 0.09
 

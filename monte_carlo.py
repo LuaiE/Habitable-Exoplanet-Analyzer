@@ -96,7 +96,7 @@ if __name__ == "__main__":
     keep = ["pl_name", "hostname", "discoverymethod", "pl_rade", "pl_insol", "st_teff",
             "pl_radeerr1", "pl_radeerr2", "pl_insolerr1", "pl_insolerr2", "st_tefferr1", "st_tefferr2",
             "pl_type", "data_quality", "within_conservative", "within_optimistic",
-            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky", "composition", "radius_ratio", "p_surface"]
+            "p_strong", "p_candidate", "p_hz_conservative", "p_rocky", "composition", "radius_ratio", "p_surface", "disputed"]
     
     Path("results").mkdir(exist_ok=True)
     df[keep].to_csv("results/planets_mc.csv", index=False)

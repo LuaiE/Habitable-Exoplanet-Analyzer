@@ -26,7 +26,7 @@ def test_measured_values_are_not_overwritten():
     assert not result["pl_insol_derived"].iloc[0]
 
 
-def test_bad_rows_are_removed():
+def test_bad_rows_are_removed_and_disputed_are_flagged():
     planets = pd.DataFrame({
         "pl_name": ["good", "disputed", "negative radius", "not orbiting"],
         "pl_controv_flag": [0, 1, 0, 0],
@@ -34,8 +34,8 @@ def test_bad_rows_are_removed():
         "pl_orbeccen": [0.1, 0.1, 0.1, 1.2],
     })
     result = elim_bad_rows(planets)
-    assert list(result["pl_name"]) == ["good"]
-
+    assert list(result["pl_name"]) == ["good", "disputed"]
+    assert list(result["disputed"]) == [False, True]
 
 # ---------- habitable.py ----------
 
@@ -72,7 +72,7 @@ def test_data_quality_tiers():
     })
     result = add_data_quality(planets)
     assert list(result["data_quality"]) == ["high", "medium", "low", "medium"]
-    
+
 def test_atmosphere_score_solar_system():
     planets = pd.DataFrame({"pl_name": ["Earth", "Mars"], "pl_bmasse": [1.0, 0.107],
                             "pl_rade": [1.0, 0.532], "pl_insol": [1.0, 0.43]})

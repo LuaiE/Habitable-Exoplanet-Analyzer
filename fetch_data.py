@@ -38,11 +38,13 @@ def fill_derived(df):
     return df
 
 def elim_bad_rows(df):
-    bad = (df["pl_controv_flag"] == 1) | (df["pl_rade"] <= 0) | (df["pl_orbeccen"] >= 1) #removes controversial or impossible planets
-    print("Removing", bad.sum(), "planets") #Removed 58 planets on initial run
+    # disputed planets are kept but flagged, so famous ones like Kepler-186 f don't silently dissapear
+    df["disputed"] = df["pl_controv_flag"] == 1
+
+    bad = (df["pl_rade"] <= 0) | (df["pl_orbeccen"] >= 1)  # physically impossible values
+    print("Removing", bad.sum(), "impossible planets;", df["disputed"].sum(), "disputed planets kept and flagged")
     df = df[~bad].reset_index(drop=True)
     return df
-
 
 if __name__ == "__main__":
     df = fetch_data()

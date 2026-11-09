@@ -9,8 +9,8 @@ HZ_COEFFS = {
 }
 
 KNOWN_CANDIDATES = ["TRAPPIST-1 e", "TRAPPIST-1 f", "TRAPPIST-1 g", "Kepler-442 b",
-                    "Proxima Cen b", "TOI-700 d", "LHS 1140 b", "Teegarden's Star b"]
-
+                    "Proxima Cen b", "TOI-700 d", "LHS 1140 b", "Teegarden's Star b",
+                    "Kepler-186 f"]
 ROCKY_RATIO_MAX = 1.05   # up to ~10% water by mass
 WATER_RATIO_MAX = 1.24   # up to ~50% water by mass
 
@@ -99,7 +99,7 @@ def add_atmo_score(df):
 def find_candidates(df):
     mask = df["within_optimistic"] & df["pl_type"].isin(["rocky", "uncertain"])
     cols = ["pl_name", "pl_rade", "pl_insol", "st_teff",
-            "within_conservative", "pl_type", "pl_bmassprov", "data_quality", "atmo_score", "atmo_class", "composition"]
+            "within_conservative", "pl_type", "pl_bmassprov", "data_quality", "atmo_score", "atmo_class", "composition", "disputed"]
     return df.loc[mask, cols].sort_values(["within_conservative", "pl_rade" ], ascending=[False, True])   
 
 def check_known(candidates):

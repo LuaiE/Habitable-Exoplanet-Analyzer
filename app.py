@@ -88,12 +88,14 @@ st.plotly_chart(hz_chart(df, filtered), width="stretch")
 st.subheader("Top candidates")
 top = filtered.sort_values("p_strong", ascending=False).copy()
 top["Probability"] = top["p_strong"] * 100
+top["Status"] = np.where(top["disputed"], "⚠️ Disputed", "")
 
 st.dataframe(
-    top[["pl_name", "Probability", "composition", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
+    top[["pl_name", "Status", "Probability", "composition", "pl_rade", "pl_insol", "st_teff", "data_quality"]],
     hide_index=True,
     column_config={
         "pl_name": "Planet",
+        "Status": st.column_config.TextColumn("Status", width=85),
         "Probability": st.column_config.ProgressColumn("Probability", min_value=0, max_value=100, format="%.0f%%"),
         "pl_rade": st.column_config.NumberColumn("Radius (Earth = 1)", format="%.2f"),
         "pl_insol": st.column_config.NumberColumn("Starlight (Earth = 1)", format="%.2f"),
@@ -109,6 +111,9 @@ if top.empty:
 else:
     name = st.selectbox("Choose a planet", top["pl_name"])
     planet = df[df["pl_name"] == name].iloc[0]
+    if planet["disputed"]:
+        st.warning("This planet's existence has been questioned in published research "
+                   "(flagged as controversial in the NASA Exoplanet Archive). Treat its ranking with caution.")
     sigma = get_sigma(planet, "pl_rade")
 
     c1, c2, c3, c4, c5 = st.columns(5)
