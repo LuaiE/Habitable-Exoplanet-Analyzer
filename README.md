@@ -4,6 +4,8 @@ Finds the confirmed exoplanets most likely to support liquid surface water, usin
 
 ![Habitable zone diagram](hz_diagram.png)
 
+**[Live dashboard](https://your-app-link.streamlit.app)**: explore every candidate interactively.
+
 ## How to Run
 
 1. Clone the repo and open the folder in a terminal
@@ -15,7 +17,7 @@ python fetch_data.py    # download + clean NASA data
 python habitable.py     # classify candidates
 python monte_carlo.py   # simulate measurement uncertainty
 python plots.py         # generate the charts
-Run the tests with `pytest`.
+Run the tests with `pytest`, or launch the dashboard locally with `streamlit run app.py`.
 ```
 
 Results are saved to `data/planets_mc.csv`. To pull fresh data from NASA, delete `data/planets_raw.csv` and rerun.
@@ -107,6 +109,7 @@ habitable-exoplanet-analyzer/
 ├── monte_carlo.py            — Simulates measurement uncertainty, outputs probabilities
 ├── plots.py                  — Generates the charts
 ├── test_pipeline.py          — Automated tests (pytest)
+├── results/planets_mc.csv    — Results used by the dashboard
 ├── hz_diagram.png            — Habitable zone chart
 ├── radius_diagram.png        — Planet size chart
 ├── probability_ranking.png   — Top candidates by probability
