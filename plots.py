@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from habitable import hz_edge   # reuse your formula; don't copy it
+from matplotlib.patches import Patch
+from matplotlib.ticker import PercentFormatter
 
 df = pd.read_csv("data/planets_scored.csv")
 candidates = pd.read_csv("data/candidates.csv")
@@ -95,5 +97,31 @@ ax_size.legend(loc="upper right", fontsize=8, labelspacing=1.2, frameon=False)
 
 fig_size.tight_layout()
 fig_size.savefig("radius_diagram.png", dpi=200, bbox_inches="tight")
+
+#PROBABILITY GRAPH
+
+mc = pd.read_csv("data/planets_mc.csv")
+top = mc[mc["p_strong"] >= 0.2].sort_values(["p_strong", "p_candidate"], ascending=False)
+
+fig_p, ax_p = plt.subplots(figsize=(9, 6))
+
+bar_colors = top["data_quality"].map({quality: color for quality, (color, marker) in quality_style.items()})
+ax_p.barh(top["pl_name"], top["p_strong"], color=bar_colors, height=0.6)
+ax_p.invert_yaxis()
+
+for y, p in enumerate(top["p_strong"]):
+    ax_p.text(p + 0.01, y, f"{p:.0%}", va="center", fontsize=8, color="#5f5e5a")
+
+ax_p.set_xlim(0, 1.08)
+ax_p.xaxis.set_major_formatter(PercentFormatter(1.0))
+ax_p.set_xlabel("Probability of being rocky (radius < 1.5) and in the conservative habitable zone")
+ax_p.spines[["top", "right"]].set_visible(False)
+
+legend_items = [Patch(color=color, label=f"{quality} data quality") for quality, (color, marker) in quality_style.items()]
+ax_p.set_title("Few candidates stay near-certain once measurement uncertainty is included")
+ax_p.legend(handles=legend_items, loc="lower right", fontsize=8, frameon=False)
+
+fig_p.tight_layout()
+fig_p.savefig("probability_ranking.png", dpi=200, bbox_inches="tight")
 
 plt.show()
