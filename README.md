@@ -29,7 +29,8 @@ The pipeline downloads every confirmed exoplanet from the NASA Exoplanet Archive
 
 1. **Habitable zone:** is the planet receiving the right amount of starlight for liquid water, given its star's temperature? Uses the Kopparapu et al. (2014) climate-model limits.
 2. **Solid or ocean surface:** is it rocky or a water world, rather than wrapped in thick gas? Where mass and radius are both measured, the planet's density is compared with rock and water models from Zeng et al. (2016); otherwise its radius is used, following Rogers (2015).
-   Planets in the optimistic habitable zone and smaller than 2 Earth radii become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
+
+Planets in the optimistic habitable zone and smaller than 2 Earth radii become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
 
 Each planet is then simulated **10,000 times** with values drawn from within its measurement error bars. The share of simulations that pass the tests becomes a **probability**, showing how confident each result really is.
 
