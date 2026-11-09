@@ -4,7 +4,7 @@ Finds the confirmed exoplanets most likely to support liquid surface water, usin
 
 ![Habitable zone diagram](hz_diagram.png)
 
-**[Live dashboard](https://your-app-link.streamlit.app)**: explore every candidate interactively.
+**[Live dashboard](https://luaie-habitable-exoplanet-analyzer-app-okvdqz.streamlit.app/)**: explore every candidate interactively.
 
 ## How to Run
 
