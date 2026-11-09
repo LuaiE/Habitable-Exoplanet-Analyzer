@@ -29,7 +29,7 @@ The pipeline downloads every confirmed exoplanet from the NASA Exoplanet Archive
 
 1. **Habitable zone:** is the planet receiving the right amount of starlight for liquid water, given its star's temperature? Uses the Kopparapu et al. (2014) climate-model limits.
 2. **Solid or ocean surface:** is it rocky or a water world, rather than wrapped in thick gas? Where mass and radius are both measured, the planet's density is compared with rock and water models from Zeng et al. (2016); otherwise its radius is used, following Rogers (2015).
-Planets in the optimistic habitable zone and smaller than 2 Earth radii become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
+   Planets in the optimistic habitable zone and smaller than 2 Earth radii become **candidates**, and every result is tagged with a **data-quality tier**, so measured values are never confused with estimates.
 
 Each planet is then simulated **10,000 times** with values drawn from within its measurement error bars. The share of simulations that pass the tests becomes a **probability**, showing how confident each result really is.
 
@@ -141,7 +141,7 @@ habitable-exoplanet-analyzer/
 - **Validated against known candidates:** the method recovers all 9 well-known habitable-zone planets tested
 - **Cool-star edge case:** TRAPPIST-1 (2566 K) sits just below the Kopparapu formula's calibrated range (2600–7200 K). Slightly-out-of-range stars use the nearest calibrated value and are flagged. For TRAPPIST-1 this changes the zone edges by under 0.5% and reproduces the limits published by Gillon et al. (2017)
 - **Missing error bars get honest defaults:** ±30% for estimated radii, ±10% for other values and ±100 K for star temperatures. Missing errors almost always mean an estimated value, so assuming zero error would make the least certain planets look the most certain
-- **Monte Carlo checks:** probabilities agree with the yes/no classification for the candidates (Kepler-440 b is a borderline 52%), shift by about 1 percentage point between random seeds, and fully measured planets are unaffected by the default uncertainties
+- **Monte Carlo checks:** probabilities agree with the yes/no classification for the candidates (Kepler-440 b is about 50%), shift by about 1 percentage point between random seeds, and fully measured planets are unaffected by the default uncertainties
 - **A bug the checks caught:** quality tiers were first based on whether the _mass_ was measured, so radial-velocity planets with estimated radii (such as GJ 1061 d) were rated high quality, and GJ 1061 d ranked #1. Tiers now depend on whether the radius was actually observed
 - **Composition from density:** where mass and radius are both measured, the radius is compared with an Earth-like rocky planet of the same mass (Zeng et al. 2016) to separate rocky planets, water worlds and gas envelopes. Water worlds count as having a habitable surface; mass is simulated alongside radius, so borderline planets get probabilities
 - **The rocky boundary is a smooth transition, not a hard cutoff:** for planets without a measured mass, the chance of being rocky falls gradually with radius, reaching 50% at 1.6 Earth radii (Rogers 2015)
